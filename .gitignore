@@ -2,4 +2,7 @@ node_modules/
 .env
 .env.local
 .DS_Store
-.txt
+*.txt
+*.md
+*.docs
+*.pdf

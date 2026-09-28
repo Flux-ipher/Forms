@@ -1,30 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { api } from '../api';
 
 export default function FormRenderer() {
   const { id } = useParams();
   const [form, setForm] = useState(null);
   const [submitted, setSubmitted] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  
+  const { register, trigger, watch, getValues, formState: { errors } } = useForm({
+    mode: 'onChange'
+  });
+
+  const formValues = watch();
 
   useEffect(() => {
     if (id) {
       api.getForm(id).then(setForm).catch(console.error);
     }
   }, [id]);
-
-  const onSubmit = async (data) => {
-    try {
-      await api.submitForm(id, data);
-      setSubmitted(true);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to submit form");
-    }
-  };
 
   if (!form) return <div className="flex justify-center items-center h-screen bg-gray-50">Loading form...</div>;
 
@@ -49,21 +45,134 @@ export default function FormRenderer() {
   const themeColor = themeNode?.color || '#3b82f6';
   const questions = form.schema?.filter(q => q.type !== 'theme') || [];
 
+  // Parse schema into pages based on sections
+  const pages = [];
+  let currentPage = { 
+    id: 'root', 
+    header: { title: form.title, description: form.description }, 
+    items: [], 
+    rule: null 
+  };
+  
+  questions.forEach(q => {
+    if (q.type === 'section') {
+      pages.push(currentPage);
+      currentPage = { 
+        id: q.id, 
+        header: { title: q.title, description: q.description }, 
+        items: [], 
+        rule: q.visibilityRule 
+      };
+    } else {
+      currentPage.items.push(q);
+    }
+  });
+  pages.push(currentPage);
+
+  const getNextValidPageIndex = (fromIndex) => {
+    let nextIdx = fromIndex + 1;
+    while(nextIdx < pages.length) {
+      const rule = pages[nextIdx].rule;
+      if (!rule || !rule.questionId) return nextIdx;
+      
+      const val = formValues[rule.questionId];
+      if (Array.isArray(val) ? val.includes(rule.optionValue) : val === rule.optionValue) {
+        return nextIdx;
+      }
+      nextIdx++;
+    }
+    return -1;
+  };
+
+  const getPrevValidPageIndex = (fromIndex) => {
+    let prevIdx = fromIndex - 1;
+    while(prevIdx >= 0) {
+      const rule = pages[prevIdx].rule;
+      if (!rule || !rule.questionId) return prevIdx;
+      
+      const val = formValues[rule.questionId];
+      if (Array.isArray(val) ? val.includes(rule.optionValue) : val === rule.optionValue) {
+        return prevIdx;
+      }
+      prevIdx--;
+    }
+    return 0;
+  };
+
+  const handleNext = async () => {
+    const fieldsToValidate = pages[currentPageIndex].items.filter(q => q.required).map(q => q.id);
+    const isValid = fieldsToValidate.length > 0 ? await trigger(fieldsToValidate) : true;
+    
+    if (isValid) {
+      setCurrentPageIndex(getNextValidPageIndex(currentPageIndex));
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentPageIndex(getPrevValidPageIndex(currentPageIndex));
+    window.scrollTo(0, 0);
+  };
+
+  const submitForm = async (e) => {
+    e.preventDefault();
+    
+    const fieldsToValidate = pages[currentPageIndex].items.filter(q => q.required).map(q => q.id);
+    const isValid = fieldsToValidate.length > 0 ? await trigger(fieldsToValidate) : true;
+    
+    if (isValid) {
+      // Collect data only from pages that were visible to the user
+      const validData = {};
+      let idx = 0;
+      while(idx !== -1 && idx < pages.length) {
+        pages[idx].items.forEach(q => {
+          validData[q.id] = formValues[q.id] || null;
+        });
+        idx = getNextValidPageIndex(idx);
+      }
+
+      try {
+        await api.submitForm(id, validData);
+        setSubmitted(true);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to submit form");
+      }
+    }
+  };
+
+  const activePage = pages[currentPageIndex];
+  const nextIdx = getNextValidPageIndex(currentPageIndex);
+  const isLastPage = nextIdx === -1;
+
+  // Calculate progress
+  // A simple approximation: current index over total pages, but we dynamically count valid pages if we wanted to.
+  // For simplicity, we just use the raw index if there are pages.
+  const progressPercentage = pages.length > 1 ? ((currentPageIndex + 1) / pages.length) * 100 : 100;
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
+        
+        {/* Progress bar */}
+        {pages.length > 1 && (
+          <div className="w-full bg-gray-200 rounded-full h-1.5 mb-6 overflow-hidden">
+            <div className="h-1.5 transition-all duration-300" style={{ width: `${progressPercentage}%`, backgroundColor: themeColor }}></div>
+          </div>
+        )}
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
           <div className="h-3 w-full" style={{ backgroundColor: themeColor }}></div>
           <div className="p-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">{form.title}</h1>
-            {form.description && (
-              <p className="text-gray-600">{form.description}</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">{activePage.header.title || form.title}</h1>
+            {(activePage.header.description || form.description) && (
+              <p className="text-gray-600">{activePage.header.description || form.description}</p>
             )}
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {questions.map((q) => (
+        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          {activePage.items.map((q) => (
             <div key={q.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
               <label className="block text-lg font-medium text-gray-900 mb-4">
                 {q.title}
@@ -143,14 +252,40 @@ export default function FormRenderer() {
             </div>
           ))}
 
+          {/* Navigation Buttons */}
           <div className="flex justify-between items-center pt-4">
-            <button
-              type="submit"
-              className="bg-primary-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm"
-            >
-              Submit
-            </button>
-            <p className="text-xs text-gray-400">Powered by FormFlow</p>
+            {currentPageIndex > 0 ? (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm flex items-center space-x-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+            ) : <div></div>}
+
+            {isLastPage ? (
+              <button
+                type="button"
+                onClick={submitForm}
+                className="bg-primary-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm"
+              >
+                Submit
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="bg-primary-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm flex items-center space-x-2"
+              >
+                <span>Next</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex justify-end pt-2">
+             <p className="text-xs text-gray-400">Powered by FormFlow</p>
           </div>
         </form>
       </div>

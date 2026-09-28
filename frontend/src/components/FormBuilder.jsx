@@ -75,6 +75,17 @@ export default function FormBuilder() {
     handleUpdate({ schema: [...(form.schema || []), newQuestion] });
   };
 
+  const addSection = () => {
+    const newSection = {
+      id: Date.now().toString(),
+      title: 'New Section',
+      description: '',
+      type: 'section',
+      visibilityRule: null
+    };
+    handleUpdate({ schema: [...(form.schema || []), newSection] });
+  };
+
   const updateQuestion = (qId, updates) => {
     const newSchema = form.schema.map(q => q.id === qId ? { ...q, ...updates } : q);
     handleUpdate({ schema: newSchema });
@@ -153,11 +164,13 @@ export default function FormBuilder() {
             items={questions.map(q => q.id)}
             strategy={verticalListSortingStrategy}
           >
-            {questions.map((q) => (
+            {questions.map((q, index) => (
               <QuestionCard
                 key={q.id}
                 id={q.id}
                 question={q}
+                allQuestions={questions}
+                index={index}
                 onChange={(updates) => updateQuestion(q.id, updates)}
                 onDelete={() => deleteQuestion(q.id)}
               />
@@ -166,13 +179,20 @@ export default function FormBuilder() {
         </div>
       </DndContext>
 
-      <div className="mt-8 flex justify-center">
+      <div className="mt-8 flex justify-center space-x-4">
         <button
           onClick={addQuestion}
           className="flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-full hover:bg-gray-50 hover:text-primary-600 transition-colors shadow-sm font-medium"
         >
           <PlusCircle className="w-5 h-5" />
           <span>Add Question</span>
+        </button>
+        <button
+          onClick={addSection}
+          className="flex items-center space-x-2 bg-primary-50 border border-primary-200 text-primary-700 px-6 py-3 rounded-full hover:bg-primary-100 transition-colors shadow-sm font-medium"
+        >
+          <PlusCircle className="w-5 h-5" />
+          <span>Add Section</span>
         </button>
       </div>
 
