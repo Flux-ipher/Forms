@@ -43,19 +43,38 @@ function Navigation() {
   );
 }
 
+import ProtectedRoute from './components/ProtectedRoute';
+
+function AdminLayout({ children }) {
+  return (
+    <ProtectedRoute>
+      <Navigation />
+      <main className="py-10">
+        {children}
+      </main>
+    </ProtectedRoute>
+  );
+}
+
 function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <main className="py-10">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/build/:id" element={<FormBuilder />} />
-            <Route path="/form/:id" element={<FormRenderer />} />
-            <Route path="/analytics/:id" element={<Analytics />} />
-          </Routes>
-        </main>
+        <Routes>
+          {/* Public Route - Anyone with the link can access */}
+          <Route path="/form/:id" element={<FormRenderer />} />
+          
+          {/* Admin Routes - Requires 6-character code */}
+          <Route path="/*" element={
+            <AdminLayout>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/build/:id" element={<FormBuilder />} />
+                <Route path="/analytics/:id" element={<Analytics />} />
+              </Routes>
+            </AdminLayout>
+          } />
+        </Routes>
       </div>
     </Router>
   );
