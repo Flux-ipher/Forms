@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { ArrowLeft, Users, ListFilter, Download, Trash2 } from 'lucide-react';
+import { ArrowLeft, Users, ListFilter, Download, Trash2, ExternalLink } from 'lucide-react';
 import { api } from '../api';
 import FormEditorNav from './FormEditorNav';
 
@@ -204,6 +204,22 @@ export default function Analytics() {
                       sub.answers[q.id] && (
                         <li key={i} className="p-4 text-gray-700">
                           {sub.answers[q.id]}
+                        </li>
+                      )
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {q.type === 'file' && (
+                <div className="mt-4 bg-gray-50 rounded-lg border border-gray-100 max-h-80 overflow-y-auto">
+                  <ul className="divide-y divide-gray-200">
+                    {submissions.map((sub, i) => (
+                      sub.answers[q.id] && (
+                        <li key={i} className="p-4 text-gray-700">
+                           <a href={sub.answers[q.id]} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline inline-flex items-center space-x-1">
+                             <span className="font-medium">View uploaded file</span>
+                           </a>
                         </li>
                       )
                     ))}
