@@ -75,6 +75,19 @@ export default function FormBuilder() {
     handleUpdate({ schema: [...(form.schema || []), newQuestion] });
   };
 
+  const addQuestionAtIndex = (index) => {
+    const newQuestion = {
+      id: Date.now().toString(),
+      title: '',
+      type: 'text',
+      options: ['Option 1'],
+      required: false
+    };
+    const newSchema = [...(form.schema || [])];
+    newSchema.splice(index + 1, 0, newQuestion);
+    handleUpdate({ schema: newSchema });
+  };
+
   const addSection = () => {
     const newSection = {
       id: Date.now().toString(),
@@ -173,6 +186,7 @@ export default function FormBuilder() {
                 index={index}
                 onChange={(updates) => updateQuestion(q.id, updates)}
                 onDelete={() => deleteQuestion(q.id)}
+                onAddQuestionInside={() => addQuestionAtIndex(index)}
               />
             ))}
           </SortableContext>
