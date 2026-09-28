@@ -1,10 +1,10 @@
 import React from 'react';
-import { Trash2, GripHorizontal, Settings } from 'lucide-react';
+import { Trash2, GripHorizontal, Settings, Copy, PlusCircle, LayoutTemplate } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import MultipleChoiceEditor from './MultipleChoiceEditor';
 
-export default function QuestionCard({ id, question, onChange, onDelete, allQuestions, index, onAddQuestionInside }) {
+export default function QuestionCard({ id, question, onChange, onDelete, allQuestions, index, isActive, onFocus, onAddQuestion, onAddSection }) {
   const {
     attributes,
     listeners,
@@ -33,8 +33,32 @@ export default function QuestionCard({ id, question, onChange, onDelete, allQues
     <div 
       ref={setNodeRef} 
       style={style} 
-      className={`bg-white rounded-xl shadow-sm border ${isDragging ? 'border-primary-500 shadow-xl opacity-80' : 'border-gray-200'} overflow-visible group transition-all hover:shadow-md ${isSection ? 'border-t-4 border-t-primary-500 mt-8' : ''} ${isInSection ? 'ml-8 border-l-4 border-l-gray-300 rounded-l-none' : ''}`}
+      className={`bg-white rounded-lg shadow-sm border ${isActive || isDragging ? 'border-primary-500 shadow-xl opacity-100 border-l-[6px]' : 'border-gray-200 border-l-[6px] border-l-transparent hover:border-l-gray-300'} overflow-visible group transition-all hover:shadow-md ${isSection ? 'border-t-[6px] border-t-primary-500 mt-8 rounded-t-lg' : 'mb-4'} ${isInSection ? 'ml-8' : ''} relative cursor-default`}
+      onClick={(e) => {
+        // Prevent click inside from resetting focus
+        e.stopPropagation();
+        if (!isActive && onFocus) onFocus();
+      }}
     >
+      {/* Absolute Side Menu (Only visible when active) */}
+      {isActive && (
+        <div className="absolute -right-14 top-0 hidden md:flex flex-col bg-white rounded-lg shadow-md border border-gray-200 p-1.5 space-y-2 items-center z-30">
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddQuestion(); }}
+            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+            title="Add Question"
+          >
+            <PlusCircle className="w-5 h-5" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddSection(); }}
+            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+            title="Add Section"
+          >
+            <LayoutTemplate className="w-5 h-5" />
+          </button>
+        </div>
+      )}
       <div 
         {...attributes} 
         {...listeners} 
@@ -113,7 +137,7 @@ export default function QuestionCard({ id, question, onChange, onDelete, allQues
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <input
                 type="text"
-                className="flex-1 text-lg font-medium text-gray-900 bg-gray-50 border border-transparent hover:border-gray-300 focus:border-primary-500 focus:bg-white rounded-lg px-4 py-3 outline-none transition-all placeholder-gray-400"
+                className="flex-1 text-base font-medium text-gray-900 bg-gray-50 border-b border-transparent hover:border-gray-300 focus:border-primary-500 focus:border-b-2 focus:bg-gray-100 px-4 py-3 outline-none transition-all placeholder-gray-500"
                 placeholder="Question title"
                 value={question.title}
                 onChange={(e) => onChange({ title: e.target.value })}
@@ -160,10 +184,10 @@ export default function QuestionCard({ id, question, onChange, onDelete, allQues
         )}
       </div>
       
-      <div className="border-t border-gray-100 bg-gray-50/50 px-6 py-3 flex items-center w-full">
-        {isSection && (
+      <div className="border-t border-gray-100 bg-white px-6 py-3 flex items-center w-full rounded-b-lg">
+        {isSection && isActive && (
           <button
-            onClick={onAddQuestionInside}
+            onClick={(e) => { e.stopPropagation(); onAddQuestion(); }}
             className="flex items-center space-x-1 text-sm text-primary-600 hover:text-primary-700 font-medium mr-auto hover:bg-primary-50 px-3 py-1.5 rounded-md transition-colors"
           >
             <span className="text-lg leading-none font-bold">+</span>
@@ -171,32 +195,49 @@ export default function QuestionCard({ id, question, onChange, onDelete, allQues
           </button>
         )}
         
-        <div className="flex items-center space-x-6 ml-auto">
+        <div className="flex items-center space-x-4 ml-auto">
           {!isSection && (
-            <>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <span className="text-sm font-medium text-gray-600">Required</span>
-                <div className="relative">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only" 
-                    checked={question.required || false}
-                    onChange={(e) => onChange({ required: e.target.checked })}
-                  />
-                  <div className={`block w-10 h-6 rounded-full transition-colors ${question.required ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
-                  <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${question.required ? 'transform translate-x-4' : ''}`}></div>
-                </div>
-              </label>
-              <div className="w-px h-6 bg-gray-300"></div>
-            </>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                // Duplicate functionality not fully implemented, acts as Add Question for now
+                onAddQuestion();
+              }}
+              className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
+              title="Duplicate"
+            >
+              <Copy className="w-5 h-5" />
+            </button>
           )}
 
           <button
             onClick={onDelete}
-            className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
+            className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
             title={isSection ? "Delete section" : "Delete question"}
           >
             <Trash2 className="w-5 h-5" />
+          </button>
+
+          <div className="w-px h-8 bg-gray-300"></div>
+
+          {!isSection && (
+            <label className="flex items-center space-x-3 cursor-pointer">
+              <span className="text-sm font-medium text-gray-600">Required</span>
+              <div className="relative flex items-center">
+                <input 
+                  type="checkbox" 
+                  className="sr-only" 
+                  checked={question.required || false}
+                  onChange={(e) => onChange({ required: e.target.checked })}
+                />
+                <div className={`block w-9 h-5 rounded-full transition-colors ${question.required ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
+                <div className={`dot absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform ${question.required ? 'transform translate-x-4' : ''}`}></div>
+              </div>
+            </label>
+          )}
+          
+          <button className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors">
+            <Settings className="w-5 h-5" />
           </button>
         </div>
       </div>

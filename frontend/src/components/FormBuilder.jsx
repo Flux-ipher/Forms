@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import QuestionCard from './QuestionCard';
 import ShareModal from './ShareModal';
 import FormEditorNav from './FormEditorNav';
-import { PlusCircle, Save, ExternalLink, BarChart2, Share2, Palette, Image as ImageIcon, Loader } from 'lucide-react';
+import { PlusCircle, Save, ExternalLink, BarChart2, Share2, Palette, Image as ImageIcon, Loader, Type, Video, LayoutTemplate } from 'lucide-react';
 import debounce from 'lodash.debounce';
 import { api } from '../api';
 import {
@@ -28,6 +28,7 @@ export default function FormBuilder() {
   const [isSaving, setIsSaving] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [activeId, setActiveId] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -66,18 +67,7 @@ export default function FormBuilder() {
     debouncedSave(updatedForm);
   };
 
-  const addQuestion = () => {
-    const newQuestion = {
-      id: Date.now().toString(),
-      title: '',
-      type: 'text',
-      options: ['Option 1'],
-      required: false
-    };
-    handleUpdate({ schema: [...(form.schema || []), newQuestion] });
-  };
-
-  const addQuestionAtIndex = (index) => {
+  const addQuestionAtIndex = (index = -1) => {
     const newQuestion = {
       id: Date.now().toString(),
       title: '',
@@ -86,11 +76,19 @@ export default function FormBuilder() {
       required: false
     };
     const newSchema = [...(form.schema || [])];
-    newSchema.splice(index + 1, 0, newQuestion);
+
+    // If we pass an index, insert after it. Otherwise append.
+    if (index >= 0) {
+      newSchema.splice(index + 1, 0, newQuestion);
+    } else {
+      newSchema.push(newQuestion);
+    }
+
     handleUpdate({ schema: newSchema });
+    setActiveId(newQuestion.id);
   };
 
-  const addSection = () => {
+  const addSectionAtIndex = (index = -1) => {
     const newSection = {
       id: Date.now().toString(),
       title: 'New Section',
@@ -98,8 +96,19 @@ export default function FormBuilder() {
       type: 'section',
       visibilityRule: null
     };
-    handleUpdate({ schema: [...(form.schema || []), newSection] });
+    const newSchema = [...(form.schema || [])];
+
+    if (index >= 0) {
+      newSchema.splice(index + 1, 0, newSection);
+    } else {
+      newSchema.push(newSection);
+    }
+
+    handleUpdate({ schema: newSchema });
+    setActiveId(newSection.id);
   };
+
+
 
   const updateQuestion = (qId, updates) => {
     const newSchema = form.schema.map(q => q.id === qId ? { ...q, ...updates } : q);
@@ -117,7 +126,7 @@ export default function FormBuilder() {
     if (active.id !== over.id) {
       const oldIndex = form.schema.findIndex((q) => q.id === active.id);
       const newIndex = form.schema.findIndex((q) => q.id === over.id);
-      
+
       const newSchema = arrayMove(form.schema, oldIndex, newIndex);
       handleUpdate({ schema: newSchema });
     }
@@ -151,105 +160,111 @@ export default function FormBuilder() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-[#f0ebf8] min-h-screen">
       <FormEditorNav />
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 mt-4">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 transition-all hover:shadow-md relative">
-        <div className="h-3 w-full" style={{ backgroundColor: themeColor }}></div>
-        {coverImage && (
-          <div className="w-full h-48 bg-gray-100 overflow-hidden">
-            <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
-          </div>
-        )}
-        <div className="absolute top-8 right-8 flex flex-col space-y-2">
-          <label className="flex items-center space-x-2 cursor-pointer text-gray-400 hover:text-gray-700 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Change Theme Color">
-            <Palette className="w-4 h-4" />
-            <span className="text-sm font-medium">Theme</span>
-            <input 
-              type="color" 
-              className="sr-only" 
-              value={themeColor} 
-              onChange={(e) => updateTheme(e.target.value)} 
-            />
-          </label>
-          <label className="flex items-center space-x-2 cursor-pointer text-gray-400 hover:text-gray-700 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Upload Cover Image">
-            {isUploadingCover ? <Loader className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-            <span className="text-sm font-medium">Cover</span>
-            <input 
-              type="file" 
-              className="sr-only" 
-              accept="image/*"
-              onChange={handleCoverUpload}
-              disabled={isUploadingCover}
-            />
-          </label>
-          {coverImage && (
-            <button onClick={() => updateTheme(themeColor, null)} className="flex items-center space-x-2 cursor-pointer text-red-400 hover:text-red-600 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm">
-              <span className="text-sm font-medium">Remove Cover</span>
-            </button>
-          )}
-        </div>
-        <div className="p-8">
-          <input
-            type="text"
-            className="w-full text-4xl font-bold text-gray-900 border-none outline-none focus:ring-0 mb-4 placeholder-gray-300"
-            placeholder="Form Title"
-            value={form.title}
-            onChange={(e) => handleUpdate({ title: e.target.value })}
-          />
-          <textarea
-            className="w-full text-gray-600 border-none outline-none focus:ring-0 resize-none placeholder-gray-400"
-            placeholder="Form Description"
-            value={form.description || ''}
-            onChange={(e) => handleUpdate({ description: e.target.value })}
-            rows={2}
-          />
-        </div>
-      </div>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="space-y-6">
-          <SortableContext
-            items={questions.map(q => q.id)}
-            strategy={verticalListSortingStrategy}
+      <div className="flex justify-center items-start pt-4 pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-3xl">
+          <div
+            className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-4 transition-all hover:shadow-md relative cursor-pointer"
+            onClick={() => setActiveId(null)}
           >
-            {questions.map((q, index) => (
-              <QuestionCard
-                key={q.id}
-                id={q.id}
-                question={q}
-                allQuestions={questions}
-                index={index}
-                onChange={(updates) => updateQuestion(q.id, updates)}
-                onDelete={() => deleteQuestion(q.id)}
-                onAddQuestionInside={() => addQuestionAtIndex(index)}
+            <div className="h-3 w-full" style={{ backgroundColor: themeColor }}></div>
+            {coverImage && (
+              <div className="w-full h-48 bg-gray-100 overflow-hidden">
+                <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="absolute top-8 right-8 flex flex-col space-y-2">
+              <label className="flex items-center space-x-2 cursor-pointer text-gray-400 hover:text-gray-700 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Change Theme Color">
+                <Palette className="w-4 h-4" />
+                <span className="text-sm font-medium">Theme</span>
+                <input
+                  type="color"
+                  className="sr-only"
+                  value={themeColor}
+                  onChange={(e) => updateTheme(e.target.value)}
+                />
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer text-gray-400 hover:text-gray-700 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Upload Cover Image">
+                {isUploadingCover ? <Loader className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                <span className="text-sm font-medium">Cover</span>
+                <input
+                  type="file"
+                  className="sr-only"
+                  accept="image/*"
+                  onChange={handleCoverUpload}
+                  disabled={isUploadingCover}
+                />
+              </label>
+              {coverImage && (
+                <button onClick={() => updateTheme(themeColor, null)} className="flex items-center space-x-2 cursor-pointer text-red-400 hover:text-red-600 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm">
+                  <span className="text-sm font-medium">Remove Cover</span>
+                </button>
+              )}
+            </div>
+            <div className="p-8">
+              <input
+                type="text"
+                className="w-full text-4xl font-bold text-gray-900 border-none outline-none focus:ring-0 mb-4 placeholder-gray-300"
+                placeholder="Form Title"
+                value={form.title}
+                onChange={(e) => handleUpdate({ title: e.target.value })}
               />
-            ))}
-          </SortableContext>
-        </div>
-      </DndContext>
+              <textarea
+                className="w-full text-gray-600 border-none outline-none focus:ring-0 resize-none placeholder-gray-400"
+                placeholder="Form Description"
+                value={form.description || ''}
+                onChange={(e) => handleUpdate({ description: e.target.value })}
+                rows={2}
+              />
+            </div>
+          </div>
 
-      <div className="mt-8 flex justify-center space-x-4">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="space-y-6">
+              <SortableContext
+                items={questions.map(q => q.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {questions.map((q, index) => (
+                  <QuestionCard
+                    key={q.id}
+                    id={q.id}
+                    question={q}
+                    allQuestions={questions}
+                    index={index}
+                    isActive={activeId === q.id}
+                    onFocus={() => setActiveId(q.id)}
+                    onChange={(updates) => updateQuestion(q.id, updates)}
+                    onDelete={() => deleteQuestion(q.id)}
+                    onAddQuestion={() => addQuestionAtIndex(index)}
+                    onAddSection={() => addSectionAtIndex(index)}
+                  />
+                ))}
+              </SortableContext>
+            </div>
+          </DndContext>
+        </div>
+      
+      {/* If there are no questions, give an initial add button below the header */ }
+  {
+    questions.length === 0 && (
+      <div className="flex justify-center mt-8">
         <button
-          onClick={addQuestion}
+          onClick={() => addQuestionAtIndex(-1)}
           className="flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-full hover:bg-gray-50 hover:text-primary-600 transition-colors shadow-sm font-medium"
         >
           <PlusCircle className="w-5 h-5" />
-          <span>Add Question</span>
-        </button>
-        <button
-          onClick={addSection}
-          className="flex items-center space-x-2 bg-primary-50 border border-primary-200 text-primary-700 px-6 py-3 rounded-full hover:bg-primary-100 transition-colors shadow-sm font-medium"
-        >
-          <PlusCircle className="w-5 h-5" />
-          <span>Add Section</span>
+          <span>Add your first question</span>
         </button>
       </div>
-
+    )
+  }
+      </div>
       <div className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg border border-gray-200 flex items-center space-x-3 sm:space-x-6 z-50 w-[90%] sm:w-max overflow-x-auto justify-between sm:justify-center">
         <div className="flex items-center text-xs sm:text-sm text-gray-500 min-w-[70px] sm:min-w-[100px] shrink-0">
           {isSaving ? (
@@ -276,7 +291,6 @@ export default function FormBuilder() {
         onClose={() => setIsShareModalOpen(false)} 
         formId={id} 
       />
-      </div>
     </div>
   );
 }
