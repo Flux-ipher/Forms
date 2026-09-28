@@ -21,11 +21,29 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Set up Multer for memory storage
+// Set up Multer for memory storage with strict security filters
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB limit protects against massive memory attacks
+  },
+  fileFilter: (req, file, cb) => {
+    // Whitelist allowed MIME types (Images and common Documents)
+    const allowedMimeTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf', // PDF
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'text/plain'
+    ];
+
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} is not allowed. Only images and standard documents (PDF, Word, Excel, TXT) are permitted. Zips and executables are blocked.`), false);
+    }
   }
 });
 
@@ -257,9 +275,16 @@ app.delete('/api/forms/:id', authMiddleware, async (req, res) => {
 });
 
 // 8. POST /api/upload
-// Upload a file to Google Drive and return the link (Public or Protected depending on use case)
-// Currently making it public so form submitters can upload files
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+// Upload a file to Google Drive and return the link
+app.post('/api/upload', (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      // Catch Multer fileFilter errors or file size limits
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
