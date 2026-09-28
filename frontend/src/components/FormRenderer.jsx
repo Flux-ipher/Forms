@@ -10,11 +10,29 @@ export default function FormRenderer() {
   const [submitted, setSubmitted] = useState(false);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   
+  // Initialize form with cached values if they exist
+  const getCachedValues = () => {
+    try {
+      const cached = localStorage.getItem(`form_progress_${id}`);
+      return cached ? JSON.parse(cached) : {};
+    } catch (e) {
+      return {};
+    }
+  };
+
   const { register, trigger, watch, getValues, formState: { errors } } = useForm({
-    mode: 'onChange'
+    mode: 'onChange',
+    defaultValues: getCachedValues()
   });
 
   const formValues = watch();
+
+  // Save progress to localStorage whenever formValues change
+  useEffect(() => {
+    if (Object.keys(formValues).length > 0) {
+      localStorage.setItem(`form_progress_${id}`, JSON.stringify(formValues));
+    }
+  }, [formValues, id]);
 
   useEffect(() => {
     if (id) {
@@ -133,6 +151,8 @@ export default function FormRenderer() {
 
       try {
         await api.submitForm(id, validData);
+        // Clear cache on successful submission
+        localStorage.removeItem(`form_progress_${id}`);
         setSubmitted(true);
       } catch (err) {
         console.error(err);
@@ -182,7 +202,7 @@ export default function FormRenderer() {
               {q.type === 'text' && (
                 <input
                   type="text"
-                  className="w-1/2 bg-transparent border-b border-gray-300 focus:border-primary-500 outline-none py-2 transition-colors text-gray-900"
+                  className="w-full sm:w-1/2 bg-transparent border-b border-gray-300 focus:border-primary-500 outline-none py-2 transition-colors text-gray-900"
                   placeholder="Your answer"
                   {...register(q.id, { required: q.required })}
                 />
@@ -238,7 +258,7 @@ export default function FormRenderer() {
               
               {q.type === 'dropdown' && (
                 <select 
-                  className="w-1/2 bg-white border border-gray-300 text-gray-900 rounded-lg px-4 py-2 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                  className="w-full sm:w-1/2 bg-white border border-gray-300 text-gray-900 rounded-lg px-4 py-2 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                   {...register(q.id, { required: q.required })}
                 >
                   <option value="">Choose</option>
@@ -253,23 +273,23 @@ export default function FormRenderer() {
           ))}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between items-center pt-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-between items-center pt-4 gap-4 sm:gap-0">
             {currentPageIndex > 0 ? (
               <button
                 type="button"
                 onClick={handleBack}
-                className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm flex items-center space-x-2"
+                className="w-full sm:w-auto bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center space-x-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
               </button>
-            ) : <div></div>}
+            ) : <div className="hidden sm:block"></div>}
 
             {isLastPage ? (
               <button
                 type="button"
                 onClick={submitForm}
-                className="bg-primary-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm"
+                className="w-full sm:w-auto bg-primary-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm"
               >
                 Submit
               </button>
@@ -277,7 +297,7 @@ export default function FormRenderer() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="bg-primary-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm flex items-center space-x-2"
+                className="w-full sm:w-auto bg-primary-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm flex items-center justify-center space-x-2"
               >
                 <span>Next</span>
                 <ArrowRight className="w-4 h-4" />

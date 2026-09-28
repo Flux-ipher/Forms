@@ -210,25 +210,25 @@ export default function FormBuilder() {
         </button>
       </div>
 
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white px-6 py-3 rounded-full shadow-lg border border-gray-200 flex items-center space-x-6 z-50">
-        <div className="flex items-center text-sm text-gray-500 min-w-[100px]">
+      <div className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg border border-gray-200 flex items-center space-x-3 sm:space-x-6 z-50 w-[90%] sm:w-max overflow-x-auto justify-between sm:justify-center">
+        <div className="flex items-center text-xs sm:text-sm text-gray-500 min-w-[70px] sm:min-w-[100px] shrink-0">
           {isSaving ? (
-            <span className="flex items-center text-yellow-600"><Save className="w-4 h-4 mr-2 animate-pulse" /> Saving...</span>
+            <span className="flex items-center text-yellow-600"><Save className="w-4 h-4 sm:mr-2 animate-pulse" /><span className="hidden sm:inline">Saving...</span></span>
           ) : (
-            <span className="flex items-center text-green-600"><Save className="w-4 h-4 mr-2" /> Saved</span>
+            <span className="flex items-center text-green-600"><Save className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Saved</span></span>
           )}
         </div>
-        <div className="w-px h-6 bg-gray-200"></div>
-        <button onClick={() => setIsShareModalOpen(true)} className="flex items-center text-sm text-gray-700 hover:text-primary-600 font-medium transition-colors">
-          <Share2 className="w-4 h-4 mr-2" /> Share
+        <div className="w-px h-6 bg-gray-200 shrink-0"></div>
+        <button onClick={() => setIsShareModalOpen(true)} className="flex items-center text-xs sm:text-sm text-gray-700 hover:text-primary-600 font-medium transition-colors shrink-0">
+          <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Share</span>
         </button>
-        <div className="w-px h-6 bg-gray-200"></div>
-        <button onClick={() => window.open(`/form/${id}`, '_blank')} className="flex items-center text-sm text-gray-700 hover:text-primary-600 font-medium transition-colors">
-          <ExternalLink className="w-4 h-4 mr-2" /> Preview
+        <div className="w-px h-6 bg-gray-200 shrink-0"></div>
+        <button onClick={() => window.open(`/form/${id}`, '_blank')} className="flex items-center text-xs sm:text-sm text-gray-700 hover:text-primary-600 font-medium transition-colors shrink-0">
+          <ExternalLink className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Preview</span>
         </button>
-        <div className="w-px h-6 bg-gray-200"></div>
-        <button onClick={() => navigate(`/analytics/${id}`)} className="flex items-center text-sm text-gray-700 hover:text-primary-600 font-medium transition-colors">
-          <BarChart2 className="w-4 h-4 mr-2" /> Analytics
+        <div className="w-px h-6 bg-gray-200 shrink-0"></div>
+        <button onClick={() => navigate(`/analytics/${id}`)} className="flex items-center text-xs sm:text-sm text-gray-700 hover:text-primary-600 font-medium transition-colors shrink-0">
+          <BarChart2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Analytics</span>
         </button>
       </div>
       <ShareModal 
