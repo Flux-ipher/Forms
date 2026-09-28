@@ -10,8 +10,18 @@ export default function FormRenderer() {
   const [submitted, setSubmitted] = useState(false);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   
+  // Extract settings
+  const settingsNode = form?.schema?.find(q => q.type === 'settings') || {};
+  const settings = {
+    confirmationMessage: settingsNode.confirmationMessage ?? 'Thank you for submitting your response.',
+    showLinkAnother: settingsNode.showLinkAnother ?? true,
+    disableAutosave: settingsNode.disableAutosave ?? false,
+    showProgressBar: settingsNode.showProgressBar ?? true
+  };
+
   // Initialize form with cached values if they exist
   const getCachedValues = () => {
+    if (settings.disableAutosave) return {};
     try {
       const cached = localStorage.getItem(`form_progress_${id}`);
       return cached ? JSON.parse(cached) : {};
@@ -29,10 +39,10 @@ export default function FormRenderer() {
 
   // Save progress to localStorage whenever formValues change
   useEffect(() => {
-    if (Object.keys(formValues).length > 0) {
+    if (!settings.disableAutosave && Object.keys(formValues).length > 0) {
       localStorage.setItem(`form_progress_${id}`, JSON.stringify(formValues));
     }
-  }, [formValues, id]);
+  }, [formValues, id, settings.disableAutosave]);
 
   useEffect(() => {
     if (id) {
@@ -50,10 +60,12 @@ export default function FormRenderer() {
             <CheckCircle className="w-8 h-8" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Response Recorded</h2>
-          <p className="text-gray-600 mb-8">Thank you for submitting your response.</p>
-          <button onClick={() => window.location.reload()} className="text-primary-600 hover:text-primary-700 font-medium underline">
-            Submit another response
-          </button>
+          <p className="text-gray-600 mb-8">{settings.confirmationMessage}</p>
+          {settings.showLinkAnother && (
+            <button onClick={() => window.location.reload()} className="text-primary-600 hover:text-primary-700 font-medium underline">
+              Submit another response
+            </button>
+          )}
         </div>
       </div>
     );
@@ -61,7 +73,7 @@ export default function FormRenderer() {
 
   const themeNode = form.schema?.find(q => q.type === 'theme');
   const themeColor = themeNode?.color || '#3b82f6';
-  const questions = form.schema?.filter(q => q.type !== 'theme') || [];
+  const questions = form.schema?.filter(q => q.type !== 'theme' && q.type !== 'settings') || [];
 
   // Parse schema into pages based on sections
   const pages = [];
@@ -175,7 +187,7 @@ export default function FormRenderer() {
       <div className="max-w-2xl mx-auto">
         
         {/* Progress bar */}
-        {pages.length > 1 && (
+        {settings.showProgressBar && pages.length > 1 && (
           <div className="w-full bg-gray-200 rounded-full h-1.5 mb-6 overflow-hidden">
             <div className="h-1.5 transition-all duration-300" style={{ width: `${progressPercentage}%`, backgroundColor: themeColor }}></div>
           </div>

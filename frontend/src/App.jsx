@@ -3,9 +3,11 @@ import FormBuilder from './components/FormBuilder';
 import FormRenderer from './components/FormRenderer';
 import Analytics from './components/Analytics';
 import Dashboard from './components/Dashboard';
+import Settings from './components/Settings';
 import { Home, Plus } from 'lucide-react';
 import { api } from './api';
 import { useNavigate } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function Navigation() {
   const navigate = useNavigate();
@@ -43,13 +45,11 @@ function Navigation() {
   );
 }
 
-import ProtectedRoute from './components/ProtectedRoute';
-
 function AdminLayout({ children }) {
   return (
     <ProtectedRoute>
       <Navigation />
-      <main className="py-10">
+      <main className="py-0">
         {children}
       </main>
     </ProtectedRoute>
@@ -71,6 +71,7 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/build/:id" element={<FormBuilder />} />
                 <Route path="/analytics/:id" element={<Analytics />} />
+                <Route path="/settings/:id" element={<Settings />} />
               </Routes>
             </AdminLayout>
           } />

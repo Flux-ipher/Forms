@@ -61,6 +61,15 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch analytics');
     return res.json();
   },
+  deleteAllResponses: async (id) => {
+    const res = await fetch(`${BASE_URL}/forms/${id}/submissions`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (res.status === 401) throw new Error('Unauthorized');
+    if (!res.ok) throw new Error('Failed to delete responses');
+    return res.json();
+  },
 
   // PUBLIC ROUTES (No Auth Required)
   getForm: async (id) => {

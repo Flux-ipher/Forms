@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { ArrowLeft, Users, ListFilter, Download } from 'lucide-react';
+import { ArrowLeft, Users, ListFilter, Download, Trash2 } from 'lucide-react';
 import { api } from '../api';
+import FormEditorNav from './FormEditorNav';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function Analytics() {
   const { id } = useParams();
   const [data, setData] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -23,7 +25,7 @@ export default function Analytics() {
   const exportToCSV = () => {
     if (!data) return;
     
-    const questions = form.schema.filter(q => q.type !== 'theme');
+    const questions = form.schema.filter(q => q.type !== 'theme' && q.type !== 'settings');
     const headers = ['Submission Date', ...questions.map(q => q.title)];
     
     const rows = submissions.map(sub => {
@@ -77,10 +79,25 @@ export default function Analytics() {
     return [];
   };
 
+  const handleDeleteResponses = async () => {
+    if (window.confirm("Are you sure you want to delete ALL responses for this form? This cannot be undone.")) {
+      setIsDeleting(true);
+      try {
+        await api.deleteAllResponses(id);
+        setData({ ...data, submissions: [] });
+      } catch (err) {
+        alert("Failed to delete responses");
+      }
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+    <div className="bg-gray-50 min-h-screen">
+      <FormEditorNav />
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 mt-4">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
+          <div className="flex items-center space-x-4">
           <Link to={`/build/${id}`} className="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-gray-900 transition-colors shadow-sm">
             <ArrowLeft className="w-5 h-5" />
           </Link>
@@ -89,8 +106,8 @@ export default function Analytics() {
             <p className="text-gray-500 mt-1">Analytics Dashboard</p>
           </div>
         </div>
-        <div className="flex space-x-3">
-          <div className="bg-white px-6 py-3 rounded-lg border border-gray-200 shadow-sm flex items-center space-x-3">
+        <div className="flex flex-wrap gap-3">
+          <div className="bg-white px-6 py-3 rounded-lg border border-gray-200 shadow-sm flex items-center space-x-3 w-full sm:w-auto">
             <div className="bg-primary-100 p-2 rounded-full">
               <Users className="w-5 h-5 text-primary-600" />
             </div>
@@ -99,18 +116,30 @@ export default function Analytics() {
               <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Responses</div>
             </div>
           </div>
-          <button 
-            onClick={exportToCSV}
-            className="bg-white px-4 py-3 rounded-lg border border-gray-200 shadow-sm flex items-center space-x-2 text-gray-700 hover:text-primary-600 hover:border-primary-300 transition-colors font-medium"
-          >
-            <Download className="w-5 h-5" />
-            <span className="hidden sm:inline">Export CSV</span>
-          </button>
+          {submissions.length > 0 && (
+            <>
+              <button 
+                onClick={exportToCSV}
+                className="flex-1 sm:flex-none bg-white px-4 py-3 rounded-lg border border-gray-200 shadow-sm flex items-center justify-center space-x-2 text-gray-700 hover:text-primary-600 hover:border-primary-300 transition-colors font-medium"
+              >
+                <Download className="w-5 h-5" />
+                <span className="hidden sm:inline">Export CSV</span>
+              </button>
+              <button 
+                onClick={handleDeleteResponses}
+                disabled={isDeleting}
+                className="flex-1 sm:flex-none bg-white px-4 py-3 rounded-lg border border-red-200 shadow-sm flex items-center justify-center space-x-2 text-red-600 hover:bg-red-50 transition-colors font-medium disabled:opacity-50"
+              >
+                <Trash2 className="w-5 h-5" />
+                <span className="hidden sm:inline">{isDeleting ? 'Deleting...' : 'Delete All'}</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       <div className="space-y-8">
-        {form.schema && form.schema.filter(q => q.type !== 'theme').map((q, index) => {
+        {form.schema && form.schema.filter(q => q.type !== 'theme' && q.type !== 'settings').map((q, index) => {
           const chartData = getAggregatedData(q.id, q.type, q.options);
           return (
             <div key={q.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
@@ -184,6 +213,7 @@ export default function Analytics() {
             </div>
           )
         })}
+      </div>
       </div>
     </div>
   );

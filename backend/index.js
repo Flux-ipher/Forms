@@ -44,7 +44,7 @@ app.get('/', (req, res) => {
   res.send('Forms API is running perfectly!');
 });
 
-const ADMIN_CODE = process.env.ADMIN_CODE || 'FLUX99';
+const ADMIN_CODE = process.env.ADMIN_CODE;
 
 // Authentication Middleware
 const authMiddleware = (req, res, next) => {
@@ -75,7 +75,7 @@ app.post('/api/auth', (req, res) => {
 app.post('/api/forms', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
-    
+
     const { title = 'Untitled Form', description = null, schema = [] } = req.body || {};
 
     const { data, error } = await supabase
@@ -97,7 +97,7 @@ app.post('/api/forms', authMiddleware, async (req, res) => {
 app.put('/api/forms/:id', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
-    
+
     const { id } = req.params;
     const { title, description, schema } = req.body;
 
@@ -119,7 +119,7 @@ app.put('/api/forms/:id', authMiddleware, async (req, res) => {
 app.get('/api/forms/:id', async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
-    
+
     const { id } = req.params;
 
     const { data, error } = await supabase
@@ -130,7 +130,7 @@ app.get('/api/forms/:id', async (req, res) => {
 
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Form not found' });
-    
+
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -142,7 +142,7 @@ app.get('/api/forms/:id', async (req, res) => {
 app.post('/api/submissions', async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
-    
+
     const { form_id, answers } = req.body;
 
     const { data, error } = await supabase
@@ -164,7 +164,7 @@ app.post('/api/submissions', async (req, res) => {
 app.get('/api/analytics/:id', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
-    
+
     const { id } = req.params;
 
     const { data: form, error: formError } = await supabase
@@ -172,7 +172,7 @@ app.get('/api/analytics/:id', authMiddleware, async (req, res) => {
       .select('*')
       .eq('id', id)
       .single();
-      
+
     if (formError) throw formError;
 
     const { data: submissions, error: subError } = await supabase
@@ -181,8 +181,28 @@ app.get('/api/analytics/:id', authMiddleware, async (req, res) => {
       .eq('form_id', id);
 
     if (subError) throw subError;
-    
+
     res.json({ form, submissions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5b. DELETE /api/forms/:id/submissions
+// Delete all submissions for a form (Protected)
+app.delete('/api/forms/:id/submissions', authMiddleware, async (req, res) => {
+  try {
+    if (!supabase) throw new Error("Supabase is not configured.");
+    
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('submissions')
+      .delete()
+      .eq('form_id', id);
+
+    if (error) throw error;
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -193,7 +213,7 @@ app.get('/api/analytics/:id', authMiddleware, async (req, res) => {
 app.get('/api/forms', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
-    
+
     const { data, error } = await supabase
       .from('forms')
       .select('id, title, description, created_at, updated_at')
@@ -211,7 +231,7 @@ app.get('/api/forms', authMiddleware, async (req, res) => {
 app.delete('/api/forms/:id', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
-    
+
     const { id } = req.params;
 
     const { data, error } = await supabase

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import QuestionCard from './QuestionCard';
 import ShareModal from './ShareModal';
+import FormEditorNav from './FormEditorNav';
 import { PlusCircle, Save, ExternalLink, BarChart2, Share2, Palette } from 'lucide-react';
 import debounce from 'lodash.debounce';
 import { api } from '../api';
@@ -134,7 +135,9 @@ export default function FormBuilder() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div className="bg-gray-50 min-h-screen">
+      <FormEditorNav />
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 mt-4">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 transition-all hover:shadow-md relative">
         <div className="h-3 w-full" style={{ backgroundColor: themeColor }}></div>
         <div className="absolute top-8 right-8">
@@ -236,6 +239,7 @@ export default function FormBuilder() {
         onClose={() => setIsShareModalOpen(false)} 
         formId={id} 
       />
+      </div>
     </div>
   );
 }
