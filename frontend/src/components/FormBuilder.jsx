@@ -170,39 +170,17 @@ export default function FormBuilder() {
           >
             <div className="h-3 w-full" style={{ backgroundColor: themeColor }}></div>
             {coverImage && (
-              <div className="w-full h-48 bg-gray-100 overflow-hidden">
+              <div className="w-full h-48 bg-gray-100 overflow-hidden relative group">
                 <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+                <button 
+                  onClick={() => updateTheme(themeColor, null)} 
+                  className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70 text-white px-3 py-1.5 rounded-md text-sm font-medium shadow-sm backdrop-blur-sm"
+                >
+                  Remove Cover
+                </button>
               </div>
             )}
-            <div className="absolute top-8 right-8 flex flex-col space-y-2">
-              <label className="flex items-center space-x-2 cursor-pointer text-gray-400 hover:text-gray-700 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Change Theme Color">
-                <Palette className="w-4 h-4" />
-                <span className="text-sm font-medium">Theme</span>
-                <input
-                  type="color"
-                  className="sr-only"
-                  value={themeColor}
-                  onChange={(e) => updateTheme(e.target.value)}
-                />
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer text-gray-400 hover:text-gray-700 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Upload Cover Image">
-                {isUploadingCover ? <Loader className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                <span className="text-sm font-medium">Cover</span>
-                <input
-                  type="file"
-                  className="sr-only"
-                  accept="image/*"
-                  onChange={handleCoverUpload}
-                  disabled={isUploadingCover}
-                />
-              </label>
-              {coverImage && (
-                <button onClick={() => updateTheme(themeColor, null)} className="flex items-center space-x-2 cursor-pointer text-red-400 hover:text-red-600 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm">
-                  <span className="text-sm font-medium">Remove Cover</span>
-                </button>
-              )}
-            </div>
-            <div className="p-8">
+            <div className="p-8 border-l-[6px] border-l-transparent">
               <input
                 type="text"
                 className="w-full text-4xl font-bold text-gray-900 border-none outline-none focus:ring-0 mb-4 placeholder-gray-300"
@@ -265,26 +243,50 @@ export default function FormBuilder() {
     )
   }
       </div>
-      <div className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg border border-gray-200 flex items-center space-x-3 sm:space-x-6 z-50 w-[90%] sm:w-max overflow-x-auto justify-between sm:justify-center">
-        <div className="flex items-center text-xs sm:text-sm text-gray-500 min-w-[70px] sm:min-w-[100px] shrink-0">
+      {/* Top Right Floating Action Bar (Google Forms Style) */}
+      <div className="fixed top-20 right-4 sm:right-8 z-50 flex flex-col sm:flex-row items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+        <div className="bg-white px-3 py-2 rounded-full shadow-md border border-gray-200 flex items-center space-x-3 sm:space-x-4">
+          <label className="flex items-center text-gray-500 hover:text-gray-900 cursor-pointer transition-colors" title="Change Theme Color">
+            <Palette className="w-5 h-5" />
+            <input
+              type="color"
+              className="sr-only"
+              value={themeColor}
+              onChange={(e) => updateTheme(e.target.value)}
+            />
+          </label>
+          <label className="flex items-center text-gray-500 hover:text-gray-900 cursor-pointer transition-colors" title="Upload Cover Image">
+            {isUploadingCover ? <Loader className="w-5 h-5 animate-spin" /> : <ImageIcon className="w-5 h-5" />}
+            <input
+              type="file"
+              className="sr-only"
+              accept="image/*"
+              onChange={handleCoverUpload}
+              disabled={isUploadingCover}
+            />
+          </label>
+          <div className="w-px h-5 bg-gray-200"></div>
+          <button onClick={() => window.open(`/form/${id}`, '_blank')} className="flex items-center text-gray-500 hover:text-gray-900 transition-colors" title="Preview">
+            <ExternalLink className="w-5 h-5" />
+          </button>
+          <div className="w-px h-5 bg-gray-200"></div>
+          <button onClick={() => navigate(`/analytics/${id}`)} className="flex items-center text-gray-500 hover:text-gray-900 transition-colors" title="Analytics">
+            <BarChart2 className="w-5 h-5" />
+          </button>
+          <div className="w-px h-5 bg-gray-200"></div>
+          <button onClick={() => setIsShareModalOpen(true)} className="flex items-center bg-primary-600 hover:bg-primary-700 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm" title="Share Form">
+            <Share2 className="w-4 h-4 mr-1.5" /> Share
+          </button>
+        </div>
+
+        {/* Small Save Status Pill below/beside it */}
+        <div className="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-100 flex items-center text-xs text-gray-500">
           {isSaving ? (
-            <span className="flex items-center text-yellow-600"><Save className="w-4 h-4 sm:mr-2 animate-pulse" /><span className="hidden sm:inline">Saving...</span></span>
+            <span className="flex items-center text-yellow-600"><Save className="w-3 h-3 mr-1.5 animate-pulse" /> Saving...</span>
           ) : (
-            <span className="flex items-center text-green-600"><Save className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Saved</span></span>
+            <span className="flex items-center text-green-600"><Save className="w-3 h-3 mr-1.5" /> Saved</span>
           )}
         </div>
-        <div className="w-px h-6 bg-gray-200 shrink-0"></div>
-        <button onClick={() => setIsShareModalOpen(true)} className="flex items-center text-xs sm:text-sm text-gray-700 hover:text-primary-600 font-medium transition-colors shrink-0">
-          <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Share</span>
-        </button>
-        <div className="w-px h-6 bg-gray-200 shrink-0"></div>
-        <button onClick={() => window.open(`/form/${id}`, '_blank')} className="flex items-center text-xs sm:text-sm text-gray-700 hover:text-primary-600 font-medium transition-colors shrink-0">
-          <ExternalLink className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Preview</span>
-        </button>
-        <div className="w-px h-6 bg-gray-200 shrink-0"></div>
-        <button onClick={() => navigate(`/analytics/${id}`)} className="flex items-center text-xs sm:text-sm text-gray-700 hover:text-primary-600 font-medium transition-colors shrink-0">
-          <BarChart2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Analytics</span>
-        </button>
       </div>
       <ShareModal 
         isOpen={isShareModalOpen} 
