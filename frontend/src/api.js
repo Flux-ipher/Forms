@@ -85,5 +85,22 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to submit form');
     return res.json();
+  },
+  
+  uploadFile: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Using fetch directly as we don't want 'Content-Type': 'application/json'
+    const res = await fetch(`${BASE_URL}/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!res.ok) {
+      throw new Error('Failed to upload file');
+    }
+    
+    return res.json();
   }
 };

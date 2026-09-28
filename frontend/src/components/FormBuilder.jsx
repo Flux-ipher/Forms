@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import QuestionCard from './QuestionCard';
 import ShareModal from './ShareModal';
 import FormEditorNav from './FormEditorNav';
-import { PlusCircle, Save, ExternalLink, BarChart2, Share2, Palette } from 'lucide-react';
+import { PlusCircle, Save, ExternalLink, BarChart2, Share2, Palette, Image as ImageIcon, Loader } from 'lucide-react';
 import debounce from 'lodash.debounce';
 import { api } from '../api';
 import {
@@ -27,6 +27,7 @@ export default function FormBuilder() {
   const [form, setForm] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -126,12 +127,27 @@ export default function FormBuilder() {
 
   const themeNode = form.schema?.find(q => q.type === 'theme');
   const themeColor = themeNode?.color || '#3b82f6';
-  const questions = form.schema?.filter(q => q.type !== 'theme') || [];
+  const coverImage = themeNode?.coverImage || null;
+  const questions = form.schema?.filter(q => q.type !== 'theme' && q.type !== 'settings') || [];
 
-  const updateTheme = (color) => {
+  const updateTheme = (color, coverImg = coverImage) => {
     const newSchema = form.schema.filter(q => q.type !== 'theme');
-    newSchema.push({ id: 'theme-settings', type: 'theme', color });
+    newSchema.push({ id: 'theme-settings', type: 'theme', color, coverImage: coverImg });
     handleUpdate({ schema: newSchema });
+  };
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsUploadingCover(true);
+    try {
+      const { url } = await api.uploadFile(file);
+      updateTheme(themeColor, url);
+    } catch (err) {
+      alert("Failed to upload cover image.");
+    } finally {
+      setIsUploadingCover(false);
+    }
   };
 
   return (
@@ -140,8 +156,13 @@ export default function FormBuilder() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 mt-4">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 transition-all hover:shadow-md relative">
         <div className="h-3 w-full" style={{ backgroundColor: themeColor }}></div>
-        <div className="absolute top-8 right-8">
-          <label className="flex items-center space-x-2 cursor-pointer text-gray-400 hover:text-gray-700 transition-colors bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Change Theme Color">
+        {coverImage && (
+          <div className="w-full h-48 bg-gray-100 overflow-hidden">
+            <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+          </div>
+        )}
+        <div className="absolute top-8 right-8 flex flex-col space-y-2">
+          <label className="flex items-center space-x-2 cursor-pointer text-gray-400 hover:text-gray-700 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Change Theme Color">
             <Palette className="w-4 h-4" />
             <span className="text-sm font-medium">Theme</span>
             <input 
@@ -151,6 +172,22 @@ export default function FormBuilder() {
               onChange={(e) => updateTheme(e.target.value)} 
             />
           </label>
+          <label className="flex items-center space-x-2 cursor-pointer text-gray-400 hover:text-gray-700 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm" title="Upload Cover Image">
+            {isUploadingCover ? <Loader className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+            <span className="text-sm font-medium">Cover</span>
+            <input 
+              type="file" 
+              className="sr-only" 
+              accept="image/*"
+              onChange={handleCoverUpload}
+              disabled={isUploadingCover}
+            />
+          </label>
+          {coverImage && (
+            <button onClick={() => updateTheme(themeColor, null)} className="flex items-center space-x-2 cursor-pointer text-red-400 hover:text-red-600 transition-colors bg-gray-50/80 backdrop-blur px-3 py-1.5 rounded-md border border-gray-200 shadow-sm">
+              <span className="text-sm font-medium">Remove Cover</span>
+            </button>
+          )}
         </div>
         <div className="p-8">
           <input

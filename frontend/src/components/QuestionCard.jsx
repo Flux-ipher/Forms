@@ -129,6 +129,7 @@ export default function QuestionCard({ id, question, onChange, onDelete, allQues
                 <option value="checkbox">Checkboxes</option>
                 <option value="dropdown">Dropdown</option>
                 <option value="date">Date</option>
+                <option value="file">File Upload</option>
               </select>
             </div>
 
@@ -141,6 +142,11 @@ export default function QuestionCard({ id, question, onChange, onDelete, allQues
               )}
               {question.type === 'date' && (
                 <div className="w-[150px] border-b border-gray-300 pb-2 text-gray-400 flex items-center">MM/DD/YYYY</div>
+              )}
+              {question.type === 'file' && (
+                <div className="w-full max-w-xs border-2 border-dashed border-gray-300 rounded-lg p-4 text-center text-gray-400 flex flex-col items-center justify-center">
+                  <span className="text-sm">Respondents will be able to upload a file to Google Drive here</span>
+                </div>
               )}
               {['radio', 'checkbox', 'dropdown'].includes(question.type) && (
                 <MultipleChoiceEditor

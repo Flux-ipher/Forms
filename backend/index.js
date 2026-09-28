@@ -4,6 +4,8 @@ const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
+const { uploadToDrive } = require('./driveService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,6 +20,14 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 app.use(express.json());
+
+// Set up Multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  }
+});
 
 // Apply rate limiting to all API routes to prevent DDoS / abuse
 const apiLimiter = rateLimit({
@@ -242,6 +252,22 @@ app.delete('/api/forms/:id', authMiddleware, async (req, res) => {
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8. POST /api/upload
+// Upload a file to Google Drive and return the link (Public or Protected depending on use case)
+// Currently making it public so form submitters can upload files
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    const fileLink = await uploadToDrive(req.file);
+    res.json({ url: fileLink });
+  } catch (err) {
+    console.error('Upload Error:', err);
     res.status(500).json({ error: err.message });
   }
 });

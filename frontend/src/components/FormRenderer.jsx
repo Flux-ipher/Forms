@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { api } from '../api';
+import FileUpload from './FileUpload';
 
 export default function FormRenderer() {
   const { id } = useParams();
@@ -30,7 +31,7 @@ export default function FormRenderer() {
     }
   };
 
-  const { register, trigger, watch, getValues, formState: { errors } } = useForm({
+  const { register, trigger, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange',
     defaultValues: getCachedValues()
   });
@@ -73,6 +74,7 @@ export default function FormRenderer() {
 
   const themeNode = form.schema?.find(q => q.type === 'theme');
   const themeColor = themeNode?.color || '#3b82f6';
+  const coverImage = themeNode?.coverImage || null;
   const questions = form.schema?.filter(q => q.type !== 'theme' && q.type !== 'settings') || [];
 
   // Parse schema into pages based on sections
@@ -195,6 +197,11 @@ export default function FormRenderer() {
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
           <div className="h-3 w-full" style={{ backgroundColor: themeColor }}></div>
+          {coverImage && (
+            <div className="w-full h-48 bg-gray-100 overflow-hidden">
+              <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+            </div>
+          )}
           <div className="p-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">{activePage.header.title || form.title}</h1>
             {(activePage.header.description || form.description) && (
@@ -234,6 +241,17 @@ export default function FormRenderer() {
                   className="bg-transparent border-b border-gray-300 focus:border-primary-500 outline-none py-2 transition-colors text-gray-900"
                   {...register(q.id, { required: q.required })}
                 />
+              )}
+              
+              {q.type === 'file' && (
+                <div>
+                  <FileUpload 
+                    value={formValues[q.id]}
+                    onUploadComplete={(url) => setValue(q.id, url, { shouldValidate: true, shouldDirty: true })} 
+                  />
+                  {/* Hidden input to register with react-hook-form */}
+                  <input type="hidden" {...register(q.id, { required: q.required })} />
+                </div>
               )}
 
               {q.type === 'radio' && (
