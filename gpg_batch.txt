@@ -1,9 +1,0 @@
-%echo Generating a basic OpenPGP key
-Key-Type: RSA
-Key-Length: 4096
-Name-Real: Flux-ipher
-Name-Email: flux.ipher@github
-Expire-Date: 0
-%no-protection
-%commit
-%echo done
