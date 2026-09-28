@@ -4,6 +4,8 @@ import FormRenderer from './components/FormRenderer';
 import Analytics from './components/Analytics';
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 import { Home, Plus } from 'lucide-react';
 import { api } from './api';
 import { useNavigate } from 'react-router-dom';
@@ -63,6 +65,8 @@ function App() {
         <Routes>
           {/* Public Route - Anyone with the link can access */}
           <Route path="/form/:id" element={<FormRenderer />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           
           {/* Admin Routes - Requires 6-character code */}
           <Route path="/*" element={
