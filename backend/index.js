@@ -44,9 +44,35 @@ app.get('/', (req, res) => {
   res.send('Forms API is running perfectly!');
 });
 
+const ADMIN_CODE = process.env.ADMIN_CODE || 'FLUX99';
+
+// Authentication Middleware
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+  }
+  const token = authHeader.split(' ')[1];
+  if (token !== ADMIN_CODE) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid admin code' });
+  }
+  next();
+};
+
+// 0. POST /api/auth
+// Verify admin code
+app.post('/api/auth', (req, res) => {
+  const { code } = req.body;
+  if (code === ADMIN_CODE) {
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ error: 'Invalid admin code' });
+  }
+});
+
 // 1. POST /api/forms
-// Create a new, blank form
-app.post('/api/forms', async (req, res) => {
+// Create a new, blank form (Protected)
+app.post('/api/forms', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
     
@@ -67,8 +93,8 @@ app.post('/api/forms', async (req, res) => {
 });
 
 // 2. PUT /api/forms/:id
-// Auto-save the form builder state
-app.put('/api/forms/:id', async (req, res) => {
+// Auto-save the form builder state (Protected)
+app.put('/api/forms/:id', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
     
@@ -89,7 +115,7 @@ app.put('/api/forms/:id', async (req, res) => {
 });
 
 // 3. GET /api/forms/:id
-// Fetch the form schema
+// Fetch the form schema (Public - for respondents)
 app.get('/api/forms/:id', async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
@@ -112,7 +138,7 @@ app.get('/api/forms/:id', async (req, res) => {
 });
 
 // 4. POST /api/submissions
-// Submit a completed form
+// Submit a completed form (Public - for respondents)
 app.post('/api/submissions', async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
@@ -134,8 +160,8 @@ app.post('/api/submissions', async (req, res) => {
 });
 
 // 5. GET /api/analytics/:id
-// Fetch all submissions for a specific form
-app.get('/api/analytics/:id', async (req, res) => {
+// Fetch all submissions for a specific form (Protected)
+app.get('/api/analytics/:id', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
     
@@ -163,8 +189,8 @@ app.get('/api/analytics/:id', async (req, res) => {
 });
 
 // 6. GET /api/forms
-// Fetch all forms for the dashboard
-app.get('/api/forms', async (req, res) => {
+// Fetch all forms for the dashboard (Protected)
+app.get('/api/forms', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
     
@@ -181,8 +207,8 @@ app.get('/api/forms', async (req, res) => {
 });
 
 // 7. DELETE /api/forms/:id
-// Delete a form
-app.delete('/api/forms/:id', async (req, res) => {
+// Delete a form (Protected)
+app.delete('/api/forms/:id', authMiddleware, async (req, res) => {
   try {
     if (!supabase) throw new Error("Supabase is not configured.");
     

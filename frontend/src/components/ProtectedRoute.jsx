@@ -1,29 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { Lock } from 'lucide-react';
+import { api } from '../api';
 
 export default function ProtectedRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
 
-  const adminCode = import.meta.env.VITE_ADMIN_CODE || 'ADMIN1'; // Default if env missing
+  const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
-    const auth = localStorage.getItem('formflow_admin_auth');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
+    const authCode = localStorage.getItem('formflow_admin_auth');
+    if (authCode) {
+      // It's already there, just set true to avoid waiting.
+      // If it's invalid, API calls will fail anyway. But for better UX, we verify:
+      api.verifyAdminCode(authCode).then(() => {
+        setIsAuthenticated(true);
+      }).catch(() => {
+        localStorage.removeItem('formflow_admin_auth');
+      });
     }
   }, []);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (code === adminCode) {
-      localStorage.setItem('formflow_admin_auth', 'true');
+    setIsChecking(true);
+    try {
+      await api.verifyAdminCode(code);
+      localStorage.setItem('formflow_admin_auth', code);
       setIsAuthenticated(true);
       setError('');
-    } else {
+    } catch (err) {
       setError('Invalid administrator code');
       setCode('');
+    } finally {
+      setIsChecking(false);
     }
   };
 
@@ -71,9 +82,10 @@ export default function ProtectedRoute({ children }) {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                disabled={isChecking}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
               >
-                Unlock Access
+                {isChecking ? 'Verifying...' : 'Unlock Access'}
               </button>
             </div>
           </form>
