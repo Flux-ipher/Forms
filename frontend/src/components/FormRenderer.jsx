@@ -17,7 +17,8 @@ export default function FormRenderer() {
     confirmationMessage: settingsNode.confirmationMessage ?? 'Thank you for submitting your response.',
     showLinkAnother: settingsNode.showLinkAnother ?? true,
     disableAutosave: settingsNode.disableAutosave ?? false,
-    showProgressBar: settingsNode.showProgressBar ?? true
+    showProgressBar: settingsNode.showProgressBar ?? true,
+    collectEmail: settingsNode.collectEmail ?? false
   };
 
   // Initialize form with cached values if they exist
@@ -100,6 +101,15 @@ export default function FormRenderer() {
     }
   });
   pages.push(currentPage);
+
+  if (settings.collectEmail) {
+    pages[0].items.unshift({
+      id: 'email',
+      type: 'email',
+      title: 'Email',
+      required: true
+    });
+  }
 
   const getNextValidPageIndex = (fromIndex) => {
     let nextIdx = fromIndex + 1;
@@ -218,13 +228,34 @@ export default function FormRenderer() {
                 {q.required && <span className="text-red-500 ml-1">*</span>}
               </label>
 
+              {q.type === 'email' && (
+                <div>
+                  <input
+                    type="email"
+                    className="w-full sm:w-1/2 bg-transparent border-b border-gray-300 focus:border-primary-500 outline-none py-2 transition-colors text-gray-900"
+                    placeholder="Your email"
+                    {...register(q.id, { 
+                      required: q.required,
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Invalid email address"
+                      }
+                    })}
+                  />
+                  {errors[q.id] && <p className="text-red-500 text-sm mt-1">{errors[q.id].message || "This field is required"}</p>}
+                </div>
+              )}
+
               {q.type === 'text' && (
-                <input
-                  type="text"
-                  className="w-full sm:w-1/2 bg-transparent border-b border-gray-300 focus:border-primary-500 outline-none py-2 transition-colors text-gray-900"
-                  placeholder="Your answer"
-                  {...register(q.id, { required: q.required })}
-                />
+                <div>
+                  <input
+                    type="text"
+                    className="w-full sm:w-1/2 bg-transparent border-b border-gray-300 focus:border-primary-500 outline-none py-2 transition-colors text-gray-900"
+                    placeholder="Your answer"
+                    {...register(q.id, { required: q.required })}
+                  />
+                  {errors[q.id] && <p className="text-red-500 text-sm mt-1">This field is required</p>}
+                </div>
               )}
 
               {q.type === 'paragraph' && (
