@@ -6,8 +6,10 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : '*';
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: frontendUrl,
   optionsSuccessStatus: 200
 }));
 app.use(express.json());
@@ -21,6 +23,10 @@ if (supabaseUrl && supabaseKey) {
 } else {
   console.warn("Supabase URL or Key is missing. Database operations failed.");
 }
+// Health check route
+app.get('/', (req, res) => {
+  res.send('Forms API is running perfectly!');
+});
 
 // 1. POST /api/forms
 // Create a new, blank form
